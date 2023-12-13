@@ -41,17 +41,29 @@ sealed trait Tree[+A] {
         case Branch(l, r) => if(f(l max f, r max f)) r max f else l max f
     }
 
+    /**	
+    * Méthode pour trouver la première feuille de l'arbre satisfaisant une condition
+    * option pour ne jamais échouer + récursif pour parcourir tout l'arbre
+    */
     def find(f: A => Boolean): Option[A] = this match {
         case Leaf(v) if (f(v)) => Some(v)
         case Branch(l, r) => l.find(f).orElse(r.find(f))
         case _ => None
     }
 
+    /**	
+    * Méthode pour connaître la profondeur de l'arbre
+    * parcours récursif de l'arbre choisissant la branche la plus longue
+    */
     def depth: Int = this match {
         case Leaf(_) => 1
         case Branch(l, r) => 1 + l.depth max r.depth
     }
 
+    /**	
+    * Méthode pour transformer l'arbre
+    * parcours récursif et transformation de chaque feuille
+    */
     def map[B](f: A => B): Tree[B] = this match {
         case Leaf(v) => Leaf(f(v))
         case Branch(l, r) => Branch(l.map(f), r.map(f))
