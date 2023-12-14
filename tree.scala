@@ -19,19 +19,19 @@ sealed trait Tree[+A] {
     */
     def size: Int = this match {
         case Leaf(_) => 1
-        case Branch(l,r) => 1 + l.size + r.size 
+        case Branch(l,r) => 1 + l.size + r.size
     }
 
-    /**	
+    /**
     * Méthode pour connaître le nombre de feuilles de l'arbre
     * +1 à chaque feuille
     */
     def count: Int = this match {
         case Leaf(_) => 1
-        case Branch(l,r) => l.count + r.count 
+        case Branch(l,r) => l.count + r.count
     }
 
-    /**	
+    /**
     * Méthode pour connaître le maximum de l'arbre
     * parcours récursif de l'arbre pour avoir les valeurs de chaque feuille
     * comparaison avec f
@@ -41,7 +41,7 @@ sealed trait Tree[+A] {
         case Branch(l, r) => if(f(l max f, r max f)) r max f else l max f
     }
 
-    /**	
+    /**
     * Méthode pour trouver la première feuille de l'arbre satisfaisant une condition
     * option pour ne jamais échouer + récursif pour parcourir tout l'arbre
     */
@@ -51,7 +51,7 @@ sealed trait Tree[+A] {
         case _ => None
     }
 
-    /**	
+    /**
     * Méthode pour connaître la profondeur de l'arbre
     * parcours récursif de l'arbre choisissant la branche la plus longue
     */
@@ -60,7 +60,7 @@ sealed trait Tree[+A] {
         case Branch(l, r) => 1 + l.depth max r.depth
     }
 
-    /**	
+    /**
     * Méthode pour transformer l'arbre
     * parcours récursif et transformation de chaque feuille
     */
@@ -69,35 +69,66 @@ sealed trait Tree[+A] {
         case Branch(l, r) => Branch(l.map(f), r.map(f))
     }
 
+    /**
+    * Méthode pour "déplier" l'arbre
+    * Parcours récursif avec pattern matching
+    * Permet d'appliquer une fonction sur chaque feuille et sur les composantes des branches
+    * Fold ne peut pas être récursive terminale car la dernière opération sera le traitement des feuilles et non l'appel à fold
+    */
     def fold[B](lf: A => B, bf: (B, B) => B): B = this match {
-    	case Leaf(v) => lf(v)
-    	case Branch(l, r) => bf(l.fold(lf, bf), r.fold(lf, bf))
+        case Leaf(v) => lf(v)
+        case Branch(l, r) => bf(l.fold(lf, bf), r.fold(lf, bf))
     }
 
+    /**
+    * Size avec fold
+    */
     def size2: Int = {
-    	fold(_ => 1, (a: Int, b: Int) => 1 + a + b)
+        fold(_ => 1, (a: Int, b: Int) => 1 + a + b)
     }
 
+    /**
+    * Count avec fold
+    */
     def count2: Int = {
-    	fold(_ => 1, (a: Int, b: Int) => a + b)
+        fold(_ => 1, (a: Int, b: Int) => a + b)
     }
-    
+
+    /**
+    * Max avec fold
+    */
     def max2(f: (A, A) => Boolean): A = {
-    	fold((a: A) => a, (l: A, r: A) => if (f(l, r)) r else l)
+        fold((a: A) => a, (l: A, r: A) => if (f(l, r)) r else l)
     }
 
+    /**
+    * Depth avec fold
+    */
     def depth2: Int = {
-    	fold(_ => 1, (l: Int, r: Int) => 1 + l max r)
+        fold(_ => 1, (l: Int, r: Int) => 1 + l max r)
     }
 
+    /**
+    * Map avec fold
+    */
     def map2[B](f: A => B): Tree[B] = {
-    	fold((a:A) => Leaf(f(a)), (l: Tree[B], r: Tree[B]) => Branch(l, r))
+        fold((a:A) => Leaf(f(a)), (l: Tree[B], r: Tree[B]) => Branch(l, r))
     }
 
+    /**
+    * Transformation de l'arbre en liste
+    * Utilisation de fold : chaque feuille est transformée en liste et l'opération de concaténation de liste en scala (:::) est utilisée comme fonction sur les branches
+    */
     def toList: List[A] = {
-    	fold((a: A) => List(a), (l: List[A], r: List[A]) => l:::r)
+        fold((a: A) => List(a), (l: List[A], r: List[A]) => l:::r)
     }
 
+    /**
+    * Méthode pour choisir une feuille aléatoirement
+    * Utilisation du générateur de nombre aléatoire pour avoir un nombre et un nouveau générateur
+    * Si on arrive à une feuille -> retourne la feuille
+    * Si on est à une branche -> parcours de l'arbre avec nouveau générateur selon valeur précédente
+    */
     def rand(rng: RNG): A = this match {
         case Leaf(v) => v
         case Branch(l, r) => {
@@ -111,6 +142,9 @@ case class Leaf[A](value: A) extends Tree[A]
 case class Branch[A](left: Tree[A], right: Tree[A]) extends Tree[A]
 
 object Tree {
+    /**
+    * Fonction max pour trouver le max d'un arbre d'entiers
+    */
     def max(t: Tree[Int]): Int = t match {
         case Leaf(v) => v
         case Branch(l, r) => max(l).max(max(r))
@@ -147,7 +181,7 @@ object TestTree {
         println(b)
         println("Max de b = " + b.max((a: String,b: String) => a < b))
         println()
-        
+
         println("Cherchons 8 dans a :")
         val sa = a.find(v => v == 8)
         sa match {
@@ -185,7 +219,7 @@ object TestTree {
         println()
         val rng = SimpleRNG(54)
         println("Valeur d'une feuille aléatoire de a : " + a.rand(rng))
-        val rng2 = SimpleRNG(108)
-        println("Valeur d'une autre feuille aléatoire de a : " + a.rand(rng2))
+        val rng2 = SimpleRNG(System.currentTimeMillis())
+        println("Valeur d'une autre feuille aléatoire de a qui changera à chaque execution : " + a.rand(rng2))
     }
 }
